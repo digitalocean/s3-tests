@@ -7379,7 +7379,283 @@ def test_100_continue():
     eq(status, '100')
 
 @attr(resource='bucket')
-@attr(method='put')
+@attr(method='get')
+@attr(operation='get cors')
+@attr(assertion='succeeds')
+@attr('cors')
+def test_get_cors():
+    bucket_name = get_new_bucket()
+    client = get_client()
+    allowed_methods = ['GET', 'PUT']
+    allowed_origins = ['*']
+    allowed_headers = ['Authorization']
+    expose_headers =  ['GET', 'PUT']
+    max_age_seconds = 3000
+
+    cors_config = {
+        'CORSRules': [{
+            'AllowedHeaders': ['Authorization'],
+            'AllowedMethods': ['GET', 'PUT'],
+            'AllowedOrigins': ['*'],
+            'ExposeHeaders': ['GET', 'PUT'],
+            'MaxAgeSeconds': 3000
+        }]
+    }
+
+    client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=cors_config)
+    response = client.get_bucket_cors(Bucket=bucket_name)
+    status = _get_status(response)
+    eq(status, 200)
+
+    eq(response['CORSRules'][0]['AllowedMethods'], allowed_methods)
+    eq(response['CORSRules'][0]['AllowedOrigins'], allowed_origins)
+    eq(response['CORSRules'][0]['AllowedHeaders'], allowed_headers)
+    eq(response['CORSRules'][0]['ExposeHeaders'], expose_headers)
+    eq(response['CORSRules'][0]['MaxAgeSeconds'], max_age_seconds)
+
+@attr(resource='bucket')
+@attr(method='get')
+@attr(operation='get cors with valid ExpectedBucketOwner')
+@attr(assertion='succeeds')
+@attr('cors')
+def test_get_cors_with_valid_expected_bucket_owner():
+    bucket_name = get_new_bucket()
+    client = get_client()
+
+    cors_configuration = {
+        'CORSRules': [{
+            'AllowedHeaders': ['Authorization'],
+            'AllowedMethods': ['GET', 'PUT'],
+            'AllowedOrigins': ['*'],
+            'ExposeHeaders': ['GET', 'PUT'],
+            'MaxAgeSeconds': 3000
+        }]
+    }
+
+    client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=cors_config)
+    response = client.get_bucket_cors(Bucket=bucket_name, ExpectedBucketOwner=client.ID)
+    status = _get_status(response)
+    eq(status, 200)
+
+@attr(resource='bucket')
+@attr(method='get')
+@attr(operation='get cors with invalid ExpectedBucketOwner')
+@attr(assertion='fails')
+@attr('cors')
+def test_get_cors_with_invalid_expected_bucket_owner():
+    bucket_name = get_new_bucket()
+    client = get_client()
+
+    cors_config = {
+        'CORSRules': [{
+            'AllowedHeaders': ['Authorization'],
+            'AllowedMethods': ['GET', 'PUT'],
+            'AllowedOrigins': ['*'],
+            'ExposeHeaders': ['GET', 'PUT'],
+            'MaxAgeSeconds': 3000
+        }]
+    }
+
+    client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=cors_config)
+    e = assert_raises(ClientError, client.get_bucket_cors, Bucket=bucket_name, ExpectedBucketOwner='string')
+    status = _get_status(e.response)
+    eq(status, 403)
+
+@attr(resource='bucket')
+@attr(method='get')
+@attr(operation='get cors with no cors set')
+@attr(assertion='fails')
+@attr('cors')
+def test_get_with_no_set_cors():
+    bucket_name = get_new_bucket()
+    client = get_client()
+
+    e = assert_raises(ClientError, client.get_bucket_cors, Bucket=bucket_name)
+    status = _get_status(e.response)
+    eq(status, 404)
+
+@attr(resource='bucket')
+@attr(method='get')
+@attr(operation='get cors not allowed')
+@attr(assertion='fails')
+@attr('cors')
+def test_get_cors_not_allowed():
+    bucket_name = get_new_bucket()
+    client = get_client()
+
+    cors_config = {
+        'CORSRules': [{
+            'AllowedHeaders': ['Authorization'],
+            'AllowedMethods': ['PUT'],
+            'AllowedOrigins': ['*'],
+            'ExposeHeaders': ['PUT'],
+            'MaxAgeSeconds': 3000
+        }]
+    }
+
+    client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=cors_config)
+    e = assert_raises(ClientError, client.get_bucket_cors, Bucket=bucket_name)
+    status = _get_status(e.response)
+    eq(status, 404)
+
+@attr(resource='bucket')
+@attr(method='get')
+@attr(operation='get cors non existant bucket')
+@attr(assertion='fails')
+@attr('cors')
+def test_get_cors_invalid_bucket_name():
+    bucket_name = 'invalid-bucket-name'
+    client = get_client()
+
+    cors_config = {
+        'CORSRules': [{
+            'AllowedHeaders': ['Authorization'],
+            'AllowedMethods': ['PUT'],
+            'AllowedOrigins': ['*'],
+            'ExposeHeaders': ['PUT'],
+            'MaxAgeSeconds': 3000
+        }]
+    }
+
+    e = assert_raises(ClientError, client.get_bucket_cors, Bucket=bucket_name)
+    status = _get_status(e.response)
+    eq(status, 404)
+
+@attr(resource='bucket')
+@attr(method='delete')
+@attr(operation='delete cors')
+@attr(assertion='succeeds')
+@attr('cors')
+def test_delete_cors():
+    bucket_name = get_new_bucket()
+    client = get_client()
+    allowed_methods = ['GET', 'PUT']
+    allowed_origins = ['*']
+    allowed_headers = ['Authorization']
+    expose_headers =  ['GET', 'PUT']
+    max_age_seconds = 3000
+
+    cors_config = {
+        'CORSRules': [{
+            'AllowedHeaders': ['Authorization'],
+            'AllowedMethods': ['GET', 'PUT'],
+            'AllowedOrigins': ['*'],
+            'ExposeHeaders': ['GET', 'PUT'],
+            'MaxAgeSeconds': 3000
+        }]
+    }
+
+    client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=cors_config)
+    response = client.delete_bucket_cors(Bucket=bucket_name)
+    status = _get_status(response)
+    eq(status, 204)
+
+    eq(response['CORSRules'][0]['AllowedMethods'], allowed_methods)
+    eq(response['CORSRules'][0]['AllowedOrigins'], allowed_origins)
+    eq(response['CORSRules'][0]['AllowedHeaders'], allowed_headers)
+    eq(response['CORSRules'][0]['ExposeHeaders'], expose_headers)
+    eq(response['CORSRules'][0]['MaxAgeSeconds'], max_age_seconds)
+
+@attr(resource='bucket')
+@attr(method='delete')
+@attr(operation='delete cors with valid ExpectedBucketOwner')
+@attr(assertion='succeeds')
+@attr('cors')
+def test_delete_cors_with_valid_expected_owner():
+    bucket_name = get_new_bucket()
+    client = get_client()
+
+    cors_configuration = {
+        'CORSRules': [{
+            'AllowedHeaders': ['Authorization'],
+            'AllowedMethods': ['GET', 'PUT'],
+            'AllowedOrigins': ['*'],
+            'ExposeHeaders': ['GET', 'PUT'],
+            'MaxAgeSeconds': 3000
+        }]
+    }
+
+    client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=cors_config)
+    response = client.delete_bucket_cors(Bucket=bucket_name, ExpectedBucketOwner=client.ID)
+    status = _get_status(response)
+    eq(status, 204)
+
+@attr(resource='bucket')
+@attr(method='delete')
+@attr(operation='delete cors with invalid ExpectedBucketOwner')
+@attr(assertion='fails')
+@attr('cors')
+def test_delete_cors_with_invalid_expected_owner():
+    bucket_name = get_new_bucket()
+    client = get_client()
+
+    cors_config = {
+        'CORSRules': [{
+            'AllowedHeaders': ['Authorization'],
+            'AllowedMethods': ['GET', 'PUT'],
+            'AllowedOrigins': ['*'],
+            'ExposeHeaders': ['GET', 'PUT'],
+            'MaxAgeSeconds': 3000
+        }]
+    }
+
+    client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=cors_config)
+    e = assert_raises(ClientError, client.delete_bucket_cors, Bucket=bucket_name, ExpectedBucketOwner='string')
+    status = _get_status(e.response)
+    eq(status, 403)
+
+@attr(resource='bucket')
+@attr(method='delete')
+@attr(operation='delete cors with no cors set')
+@attr(assertion='fails')
+@attr('cors')
+def test_delete_with_no_set_cors():
+    bucket_name = get_new_bucket()
+    client = get_client()
+
+    e = assert_raises(ClientError, client.delete_bucket_cors, Bucket=bucket_name)
+    status = _get_status(e.response)
+    eq(status, 404)
+
+@attr(resource='bucket')
+@attr(method='delete')
+@attr(operation='delete cors not allowed')
+@attr(assertion='fails')
+@attr('cors')
+def test_delete_cors_method_not_allowed():
+    bucket_name = get_new_bucket()
+    client = get_client()
+
+    cors_config = {
+        'CORSRules': [{
+            'AllowedHeaders': ['Authorization'],
+            'AllowedMethods': ['PUT'],
+            'AllowedOrigins': ['*'],
+            'ExposeHeaders': ['PUT'],
+            'MaxAgeSeconds': 3000
+        }]
+    }
+
+    client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=cors_config)
+    e = assert_raises(ClientError, client.delete_bucket_cors, Bucket=bucket_name)
+    status = _get_status(e.response)
+    eq(status, 404)
+
+@attr(resource='bucket')
+@attr(method='delete')
+@attr(operation='delete cors non existant bucket')
+@attr(assertion='fails')
+@attr('cors')
+def test_delete_cors_invalid_bucket_name():
+    bucket_name = 'invalid-bucket-name'
+    client = get_client()
+
+    e = assert_raises(ClientError, client.delete_bucket_cors, Bucket=bucket_name)
+    status = _get_status(e.response)
+    eq(status, 404)
+
+@attr(resource='bucket')
+@attr(method='set')
 @attr(operation='set cors')
 @attr(assertion='succeeds')
 @attr('cors')
@@ -7387,29 +7663,196 @@ def test_set_cors():
     bucket_name = get_new_bucket()
     client = get_client()
     allowed_methods = ['GET', 'PUT']
-    allowed_origins = ['*.get', '*.put']
+    allowed_origins = ['*']
+    allowed_headers = ['Authorization']
+    expose_headers =  ['GET', 'PUT']
+    max_age_seconds = 3000
 
-    cors_config ={
-        'CORSRules': [
-            {'AllowedMethods': allowed_methods,
-             'AllowedOrigins': allowed_origins,
-            },
-        ]
+    cors_config = {
+        'CORSRules': [{
+            'AllowedHeaders': ['Authorization'],
+            'AllowedMethods': ['GET', 'PUT'],
+            'AllowedOrigins': ['*'],
+            'ExposeHeaders': ['GET', 'PUT'],
+            'MaxAgeSeconds': 3000
+        }]
     }
 
-    e = assert_raises(ClientError, client.get_bucket_cors, Bucket=bucket_name)
-    status = _get_status(e.response)
-    eq(status, 404)
+    response = client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=cors_config)
+    status = _get_status(response)
+    eq(status, 200)
 
-    client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=cors_config)
-    response = client.get_bucket_cors(Bucket=bucket_name)
     eq(response['CORSRules'][0]['AllowedMethods'], allowed_methods)
     eq(response['CORSRules'][0]['AllowedOrigins'], allowed_origins)
+    eq(response['CORSRules'][0]['AllowedHeaders'], allowed_headers)
+    eq(response['CORSRules'][0]['ExposeHeaders'], expose_headers)
+    eq(response['CORSRules'][0]['MaxAgeSeconds'], max_age_seconds)
 
-    client.delete_bucket_cors(Bucket=bucket_name)
-    e = assert_raises(ClientError, client.get_bucket_cors, Bucket=bucket_name)
-    status = _get_status(e.response)
+@attr(resource='bucket')
+@attr(method='set')
+@attr(operation='set cors with valid ExpectedBucketOwner')
+@attr(assertion='succeeds')
+@attr('cors')
+def test_set_cors_with_valid_expected_bucket_owner():
+    bucket_name = get_new_bucket()
+    client = get_client()
+
+    cors_configuration = {
+        'CORSRules': [{
+            'AllowedHeaders': ['Authorization'],
+            'AllowedMethods': ['GET', 'PUT'],
+            'AllowedOrigins': ['*'],
+            'ExposeHeaders': ['GET', 'PUT'],
+            'MaxAgeSeconds': 3000
+        }]
+    }
+
+    response = client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=cors_config, ExpectedBucketOwner=client.ID)
+    status = _get_status(response)
+    eq(status, 200)
+
+    eq(response['ExpectedBucketOwner'], client.ID)
+
+@attr(resource='bucket')
+@attr(method='set')
+@attr(operation='set cors with invalid ExpectedBucketOwner')
+@attr(assertion='fails')
+@attr('cors')
+def test_set_cors_with_invalid_expected_bucket_owner():
+    bucket_name = get_new_bucket()
+    invalid_bucket_owner = 'strings'
+    client = get_client()
+
+    cors_config = {
+        'CORSRules': [{
+            'AllowedHeaders': ['Authorization'],
+            'AllowedMethods': ['GET', 'PUT'],
+            'AllowedOrigins': ['*'],
+            'ExposeHeaders': ['GET', 'PUT'],
+            'MaxAgeSeconds': 3000
+        }]
+    }
+
+    response = client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=cors_config, ExpectedBucketOwner=invalid_bucket_owner)
+    status = _get_status(response)
+    eq(status, 403)
+
+    eq(response['ExpectedBucketOwner'], invalid_bucket_owner)
+
+@attr(resource='bucket')
+@attr(method='set')
+@attr(operation='set cors not allowed')
+@attr(assertion='fails')
+@attr('cors')
+def test_set_cors_not_allowed():
+    bucket_name = get_new_bucket()
+    client = get_client()
+
+    cors_config = {
+        'CORSRules': [{
+            'AllowedHeaders': ['Authorization'],
+            'AllowedMethods': ['GET'],
+            'AllowedOrigins': ['*'],
+            'ExposeHeaders': ['GET'],
+            'MaxAgeSeconds': 3000
+        }]
+    }
+
+    response = client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=cors_config)
+    status = _get_status(response)
     eq(status, 404)
+
+attr(resource='bucket')
+@attr(method='set')
+@attr(operation='set cors with header mismatch')
+@attr(assertion='fails')
+@attr('cors')
+def test_set_cors_with_header_mismatch():
+    bucket_name = get_new_bucket()
+    client = get_client()
+
+    cors_configuration = {
+        'CORSRules': [{
+            'AllowedHeaders': ['Authorization'],
+            'AllowedMethods': ['GET', 'PUT'],
+            'AllowedOrigins': ['*.put'],
+            'ExposeHeaders': ['PUT'],
+            'MaxAgeSeconds': 3000
+        }]
+    }
+
+    response = client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=cors_config)
+    status = _get_status(response)
+    eq(status, 404)
+
+attr(resource='bucket')
+@attr(method='set')
+@attr(operation='set cors with empty headers')
+@attr(assertion='fails')
+@attr('cors')
+def test_set_cors_with_empty_headers():
+    bucket_name = get_new_bucket()
+    client = get_client()
+
+    cors_config = {
+        'CORSRules': [{
+            'AllowedHeaders': [],
+            'AllowedMethods': [],
+            'AllowedOrigins': [],
+            'ExposeHeaders': [],
+            'MaxAgeSeconds': 3000
+        }]
+    }
+
+    response = client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=cors_config)
+    status = _get_status(response)
+    eq(status, 404)
+
+@attr(resource='bucket')
+@attr(method='set')
+@attr(operation='set cors with invalid MaxAgeSeconds')
+@attr(assertion='fails')
+@attr('cors')
+def test_set_cors_with_invalid_max_age_seconds():
+    bucket_name = get_new_bucket()
+    client = get_client()
+
+    cors_config = {
+        'CORSRules': [{
+            'AllowedHeaders': ['Authorization'],
+            'AllowedMethods': ['PUT'],
+            'AllowedOrigins': ['*'],
+            'ExposeHeaders': ['PUT'],
+            'MaxAgeSeconds': -1
+        }]
+    }
+
+    response = client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=cors_config)
+    status = _get_status(response)
+    eq(status, 404)
+
+@attr(resource='bucket')
+@attr(method='set')
+@attr(operation='set cors with valid MaxAgeSeconds')
+@attr(assertion='succeeds')
+@attr('cors')
+def test_set_cors_with_valid_max_age_seconds():
+    bucket_name = get_new_bucket()
+    client = get_client()
+
+    cors_config = {
+        'CORSRules': [{
+            'AllowedHeaders': ['Authorization'],
+            'AllowedMethods': ['PUT'],
+            'AllowedOrigins': ['*'],
+            'ExposeHeaders': ['PUT'],
+            'MaxAgeSeconds': 400
+        }]
+    }
+
+    client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=cors_config)
+    status = _get_status(response)
+    eq(status, 200)
 
 def _cors_request_and_check(func, url, headers, expect_status, expect_allow_origin, expect_allow_methods):
     r = func(url, headers=headers)
