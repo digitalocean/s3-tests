@@ -3360,6 +3360,80 @@ def test_post_object_invalid_content_length_argument():
 @attr(resource='object')
 @attr(method='post')
 @attr(operation='authenticated browser based upload via POST request')
+@attr(assertion='fails with invalid JSON error')
+def test_post_object_content_length_with_negative_lower_limit():
+    bucket_name = get_new_bucket()
+    client = get_client()
+
+    url = _get_post_url(bucket_name)
+    utc = pytz.utc
+    expires = datetime.datetime.now(utc) + datetime.timedelta(seconds=+6000)
+
+    policy_document = {"expiration": expires.strftime("%Y-%m-%dT%H:%M:%SZ"),\
+    "conditions": [\
+    {"bucket": bucket_name},\
+    ["starts-with", "$key", "foo"],\
+    {"acl": "private"},\
+    ["starts-with", "$Content-Type", "text/plain"],\
+    ["content-length-range", 1048576, -1],\
+    ]\
+    }
+
+    json_policy_document = json.JSONEncoder().encode(policy_document)
+    bytes_json_policy_document = bytes(json_policy_document, 'utf-8')
+    policy = base64.b64encode(bytes_json_policy_document)
+    aws_secret_access_key = get_main_aws_secret_key()
+    aws_access_key_id = get_main_aws_access_key()
+
+    signature = base64.b64encode(hmac.new(bytes(aws_secret_access_key, 'utf-8'), policy, hashlib.sha1).digest())
+
+    payload = OrderedDict([ ("key" , "foo.txt"),("AWSAccessKeyId" , aws_access_key_id),\
+    ("acl" , "private"),("signature" , signature),("policy" , policy),\
+    ("Content-Type" , "text/plain"),('file', ('bar'))])
+
+    r = requests.post(url, files = payload)
+    eq(r.status_code, 400)
+
+@attr(resource='object')
+@attr(method='post')
+@attr(operation='authenticated browser based upload via POST request')
+@attr(assertion='fails with invalid JSON error')
+def test_post_object_with_negative_content_length():
+    bucket_name = get_new_bucket()
+    client = get_client()
+
+    url = _get_post_url(bucket_name)
+    utc = pytz.utc
+    expires = datetime.datetime.now(utc) + datetime.timedelta(seconds=+6000)
+
+    policy_document = {"expiration": expires.strftime("%Y-%m-%dT%H:%M:%SZ"),\
+    "conditions": [\
+    {"bucket": bucket_name},\
+    ["starts-with", "$key", "foo"],\
+    {"acl": "private"},\
+    ["starts-with", "$Content-Type", "text/plain"],\
+    ["content-length-range", -1, -5],\
+    ]\
+    }
+
+    json_policy_document = json.JSONEncoder().encode(policy_document)
+    bytes_json_policy_document = bytes(json_policy_document, 'utf-8')
+    policy = base64.b64encode(bytes_json_policy_document)
+    aws_secret_access_key = get_main_aws_secret_key()
+    aws_access_key_id = get_main_aws_access_key()
+
+    signature = base64.b64encode(hmac.new(bytes(aws_secret_access_key, 'utf-8'), policy, hashlib.sha1).digest())
+
+    payload = OrderedDict([ ("key" , "foo.txt"),("AWSAccessKeyId" , aws_access_key_id),\
+    ("acl" , "private"),("signature" , signature),("policy" , policy),\
+    ("Content-Type" , "text/plain"),('file', ('bar'))])
+
+    r = requests.post(url, files = payload)
+    eq(r.status_code, 400)
+
+@attr(resource='object')
+@attr(method='post')
+@attr(operation='authenticated browser based upload via POST request')
 @attr(assertion='fails with upload size less than minimum allowable error')
 def test_post_object_upload_size_below_minimum():
     bucket_name = get_new_bucket()
