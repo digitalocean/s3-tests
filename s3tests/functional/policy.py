@@ -1,5 +1,6 @@
 import json
 
+
 class Statement(object):
     def __init__(self, action, resource, principal = {"AWS" : "*"}, effect= "Allow", condition = None):
         self.principal = principal
@@ -20,6 +21,7 @@ class Statement(object):
 
         return d
 
+
 class Policy(object):
     def __init__(self):
         self.statements = []
@@ -36,6 +38,7 @@ class Policy(object):
         }
 
         return json.dumps(policy_dict)
+
 
 def make_json_policy(action, resource, principal={"AWS": "*"}, conditions=None):
     """

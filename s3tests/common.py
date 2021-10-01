@@ -11,12 +11,14 @@ from lxml import etree
 from doctest import Example
 from lxml.doctestcompare import LXMLOutputChecker
 
+
 s3 = munch.Munch()
 config = munch.Munch()
 prefix = ''
 
 bucket_counter = itertools.count(1)
 key_counter = itertools.count(1)
+
 
 def choose_bucket_prefix(template, max_len=30):
     """
@@ -41,6 +43,7 @@ def choose_bucket_prefix(template, max_len=30):
             template=template,
             ),
         )
+
 
 def nuke_bucket(bucket):
     try:
@@ -72,6 +75,7 @@ def nuke_bucket(bucket):
         # seems like we're not the owner of the bucket; ignore
         pass
 
+
 def nuke_prefixed_buckets():
     for name, conn in list(s3.items()):
         print('Cleaning buckets from connection {name}'.format(name=name))
@@ -82,12 +86,14 @@ def nuke_prefixed_buckets():
 
     print('Done with cleanup of test buckets.')
 
+
 def read_config(fp):
     config = munch.Munch()
     g = yaml.safe_load_all(fp)
     for new in g:
         config.update(munch.Munchify(new))
     return config
+
 
 def connect(conf):
     mapping = dict(
@@ -116,6 +122,7 @@ def connect(conf):
     # TODO test vhost calling format
     conn = boto.s3.connection.S3Connection(**kwargs)
     return conn
+
 
 def setup():
     global s3, config, prefix
@@ -165,6 +172,7 @@ def setup():
     # really fail.
     nuke_prefixed_buckets()
 
+
 def get_new_bucket(connection=None):
     """
     Get a bucket that exists and is empty.
@@ -184,8 +192,10 @@ def get_new_bucket(connection=None):
     bucket = connection.create_bucket(name)
     return bucket
 
+
 def teardown():
     nuke_prefixed_buckets()
+
 
 def with_setup_kwargs(setup, teardown=None):
     """Decorator to add setup and/or teardown methods to a test function::
@@ -257,11 +267,13 @@ def with_setup_kwargs(setup, teardown=None):
 #    yield _test_gen, '1'
 #    yield _test_gen
 
+
 def trim_xml(xml_str):
     p = etree.XMLParser(encoding="utf-8", remove_blank_text=True)
     xml_str = bytes(xml_str, "utf-8")
     elem = etree.XML(xml_str, parser=p)
     return etree.tostring(elem, encoding="unicode")
+
 
 def normalize_xml(xml, pretty_print=True):
     if xml is None:
@@ -291,6 +303,7 @@ def normalize_xml(xml, pretty_print=True):
         xmlstr = xmlstr.replace(uri, 'URI-DTD')
     #xmlstr = re.sub(r'>\s+', '>', xmlstr, count=0, flags=re.MULTILINE)
     return xmlstr
+
 
 def assert_xml_equal(got, want):
     assert want is not None, 'Wanted XML cannot be None'

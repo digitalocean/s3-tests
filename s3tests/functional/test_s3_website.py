@@ -27,6 +27,7 @@ from . import (
     choose_bucket_prefix,
     )
 
+
 IGNORE_FIELD = 'IGNORETHIS'
 
 SLEEP_INTERVAL = 0.01
@@ -42,6 +43,7 @@ INDEXDOC_TEMPLATE = '<html><h1>IndexDoc</h1><body>{random}</body></html>'
 ERRORDOC_TEMPLATE = '<html><h1>ErrorDoc</h1><body>{random}</body></html>'
 
 CAN_WEBSITE = None
+
 
 def check_can_test_website():
     global CAN_WEBSITE
@@ -81,6 +83,7 @@ def make_website_config(xml_fragment):
     """
     return '<?xml version="1.0" encoding="UTF-8"?><WebsiteConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' + xml_fragment + '</WebsiteConfiguration>'
 
+
 def get_website_url(**kwargs):
     """
     Return the URL to a website page
@@ -109,6 +112,7 @@ def get_website_url(**kwargs):
     path = path.lstrip('/')
     return "%s://%s/%s" % (proto, hostname, path)
 
+
 def _test_website_populate_fragment(xml_fragment, fields):
     for k in ['RoutingRules']:
       if k in list(fields.keys()) and len(fields[k]) > 0:
@@ -122,6 +126,7 @@ def _test_website_populate_fragment(xml_fragment, fields):
     f.update(fields)
     xml_fragment = string.Template(xml_fragment).safe_substitute(**f)
     return xml_fragment, f
+
 
 def _test_website_prep(bucket, xml_template, hardcoded_fields = {}, expect_fail=None):
     xml_fragment, f = _test_website_populate_fragment(xml_template, hardcoded_fields)
@@ -173,6 +178,7 @@ def _test_website_prep(bucket, xml_template, hardcoded_fields = {}, expect_fail=
     f['WebsiteConfiguration'] = config_xmlcmp
     return f
 
+
 def __website_expected_reponse_status(res, status, reason):
     if not isinstance(status, collections.Container):
         status = set([status])
@@ -183,6 +189,7 @@ def __website_expected_reponse_status(res, status, reason):
         ok(res.status in status, 'HTTP code was %s should be %s' % (res.status, status))
     if reason is not IGNORE_FIELD:
         ok(res.reason in reason, 'HTTP reason was was %s should be %s' % (res.reason, reason))
+
 
 def _website_expected_default_html(**kwargs):
     fields = []
@@ -200,6 +207,7 @@ def _website_expected_default_html(**kwargs):
             s = '<li>%s: %s</li>' % (k,v2)
             fields.append(s)
     return fields
+
 
 def _website_expected_error_response(res, bucket_name, status, reason, code, content=None, body=None):
     if body is None:
@@ -221,6 +229,7 @@ def _website_expected_error_response(res, bucket_name, status, reason, code, con
             f = bytes(f, 'utf-8')
             ok(f in body, 'HTML should contain "%s"' % (f, ))
 
+
 def _website_expected_redirect_response(res, status, reason, new_url):
     body = res.read()
     print(body)
@@ -228,6 +237,7 @@ def _website_expected_redirect_response(res, status, reason, new_url):
     loc = res.getheader('Location', None)
     eq(loc, new_url, 'Location header should be set "%s" != "%s"' % (loc,new_url,))
     ok(len(body) == 0, 'Body of a redirect should be empty')
+
 
 def _website_request(bucket_name, path, connect_hostname=None, method='GET', timeout=None):
     url = get_website_url(proto='http', bucket=bucket_name, path=path)
@@ -245,6 +255,7 @@ def _website_request(bucket_name, path, connect_hostname=None, method='GET', tim
         print(k,v)
     return res
 
+
 # ---------- Non-existant buckets via the website endpoint
 @attr(resource='bucket')
 @attr(method='get')
@@ -257,6 +268,7 @@ def test_website_nonexistant_bucket_s3():
     bucket_name = get_new_bucket_name()
     res = _website_request(bucket_name, '')
     _website_expected_error_response(res, bucket_name, 404, 'Not Found', 'NoSuchBucket', content=_website_expected_default_html(Code='NoSuchBucket'))
+
 
 @attr(resource='bucket')
 @attr(method='get')
@@ -271,6 +283,7 @@ def test_website_nonexistant_bucket_rgw():
     res = _website_request(bucket_name, '')
     #_website_expected_error_response(res, bucket_name, 403, 'Forbidden', 'AccessDenied', content=_website_expected_default_html(Code='AccessDenied'))
     _website_expected_error_response(res, bucket_name, 404, 'Not Found', 'NoSuchBucket', content=_website_expected_default_html(Code='NoSuchBucket'))
+
 
 #------------- IndexDocument only, successes
 @attr(resource='bucket')
@@ -300,6 +313,7 @@ def test_website_public_bucket_list_public_index():
     __website_expected_reponse_status(res, 200, 'OK')
     indexhtml.delete()
     bucket.delete()
+
 
 @attr(resource='bucket')
 @attr(method='get')
@@ -347,6 +361,7 @@ def test_website_private_bucket_list_empty():
     _website_expected_error_response(res, bucket.name, 403, 'Forbidden', 'AccessDenied', content=_website_expected_default_html(Code='AccessDenied'))
     bucket.delete()
 
+
 @attr(resource='bucket')
 @attr(method='get')
 @attr(operation='list')
@@ -361,6 +376,7 @@ def test_website_public_bucket_list_empty():
     res = _website_request(bucket.name, '')
     _website_expected_error_response(res, bucket.name, 404, 'Not Found', 'NoSuchKey', content=_website_expected_default_html(Code='NoSuchKey'))
     bucket.delete()
+
 
 @attr(resource='bucket')
 @attr(method='get')
@@ -387,6 +403,7 @@ def test_website_public_bucket_list_private_index():
     indexhtml.delete()
     bucket.delete()
 
+
 @attr(resource='bucket')
 @attr(method='get')
 @attr(operation='list')
@@ -412,6 +429,7 @@ def test_website_private_bucket_list_private_index():
     indexhtml.delete()
     bucket.delete()
 
+
 # ---------- IndexDocument & ErrorDocument, failures due to errordoc assigned but missing
 @attr(resource='bucket')
 @attr(method='get')
@@ -429,6 +447,7 @@ def test_website_private_bucket_list_empty_missingerrordoc():
 
     bucket.delete()
 
+
 @attr(resource='bucket')
 @attr(method='get')
 @attr(operation='list')
@@ -443,6 +462,7 @@ def test_website_public_bucket_list_empty_missingerrordoc():
     res = _website_request(bucket.name, '')
     _website_expected_error_response(res, bucket.name, 404, 'Not Found', 'NoSuchKey')
     bucket.delete()
+
 
 @attr(resource='bucket')
 @attr(method='get')
@@ -468,6 +488,7 @@ def test_website_public_bucket_list_private_index_missingerrordoc():
     indexhtml.delete()
     bucket.delete()
 
+
 @attr(resource='bucket')
 @attr(method='get')
 @attr(operation='list')
@@ -491,6 +512,7 @@ def test_website_private_bucket_list_private_index_missingerrordoc():
 
     indexhtml.delete()
     bucket.delete()
+
 
 # ---------- IndexDocument & ErrorDocument, failures due to errordoc assigned but not accessible
 @attr(resource='bucket')
@@ -520,6 +542,7 @@ def test_website_private_bucket_list_empty_blockederrordoc():
 
     errorhtml.delete()
     bucket.delete()
+
 
 @attr(resource='bucket')
 @attr(method='get')
@@ -572,6 +595,7 @@ def test_website_public_bucket_list_pubilc_errordoc():
     errorhtml.delete()
     bucket.delete()
 
+
 @attr(resource='bucket')
 @attr(method='get')
 @attr(operation='list')
@@ -598,6 +622,7 @@ def test_website_public_bucket_list_empty_blockederrordoc():
 
     errorhtml.delete()
     bucket.delete()
+
 
 @attr(resource='bucket')
 @attr(method='get')
@@ -632,6 +657,7 @@ def test_website_public_bucket_list_private_index_blockederrordoc():
     errorhtml.delete()
     bucket.delete()
 
+
 @attr(resource='bucket')
 @attr(method='get')
 @attr(operation='list')
@@ -665,6 +691,7 @@ def test_website_private_bucket_list_private_index_blockederrordoc():
     errorhtml.delete()
     bucket.delete()
 
+
 # ---------- IndexDocument & ErrorDocument, failures with errordoc available
 @attr(resource='bucket')
 @attr(method='get')
@@ -689,6 +716,7 @@ def test_website_private_bucket_list_empty_gooderrordoc():
     errorhtml.delete()
     bucket.delete()
 
+
 @attr(resource='bucket')
 @attr(method='get')
 @attr(operation='list')
@@ -712,6 +740,7 @@ def test_website_public_bucket_list_empty_gooderrordoc():
 
     errorhtml.delete()
     bucket.delete()
+
 
 @attr(resource='bucket')
 @attr(method='get')
@@ -742,6 +771,7 @@ def test_website_public_bucket_list_private_index_gooderrordoc():
     errorhtml.delete()
     bucket.delete()
 
+
 @attr(resource='bucket')
 @attr(method='get')
 @attr(operation='list')
@@ -771,6 +801,7 @@ def test_website_private_bucket_list_private_index_gooderrordoc():
     errorhtml.delete()
     bucket.delete()
 
+
 # ------ RedirectAll tests
 @attr(resource='bucket')
 @attr(method='get')
@@ -788,6 +819,7 @@ def test_website_bucket_private_redirectall_base():
     _website_expected_redirect_response(res, 301, ['Moved Permanently'], new_url)
 
     bucket.delete()
+
 
 @attr(resource='bucket')
 @attr(method='get')
@@ -808,6 +840,7 @@ def test_website_bucket_private_redirectall_path():
 
     bucket.delete()
 
+
 @attr(resource='bucket')
 @attr(method='get')
 @attr(operation='list')
@@ -827,6 +860,7 @@ def test_website_bucket_private_redirectall_path_upgrade():
     _website_expected_redirect_response(res, 301, ['Moved Permanently'], new_url)
 
     bucket.delete()
+
 
 # ------ x-amz redirect tests
 @attr(resource='bucket')
@@ -861,6 +895,7 @@ def test_website_xredirect_nonwebsite():
     k.delete()
     bucket.delete()
 
+
 @attr(resource='bucket')
 @attr(method='get')
 @attr(operation='list')
@@ -887,6 +922,7 @@ def test_website_xredirect_public_relative():
 
     k.delete()
     bucket.delete()
+
 
 @attr(resource='bucket')
 @attr(method='get')
@@ -915,6 +951,7 @@ def test_website_xredirect_public_abs():
     k.delete()
     bucket.delete()
 
+
 @attr(resource='bucket')
 @attr(method='get')
 @attr(operation='list')
@@ -941,6 +978,7 @@ def test_website_xredirect_private_relative():
 
     k.delete()
     bucket.delete()
+
 
 @attr(resource='bucket')
 @attr(method='get')
@@ -970,6 +1008,7 @@ def test_website_xredirect_private_abs():
     k.delete()
     bucket.delete()
 # ------ RoutingRules tests
+
 
 # RoutingRules
 ROUTING_RULES = {
@@ -1135,6 +1174,7 @@ for redirect_code in VALID_AMZ_REDIRECT:
 # give an error of 'The provided HTTP redirect code (314) is not valid. Valid codes are 3XX except 300.' during setting the website config
 # we should check that we can return that too on ceph
 
+
 def routing_setup():
   check_can_test_website()
   kwargs = {'obj':[]}
@@ -1168,10 +1208,12 @@ def routing_setup():
 
   return kwargs
 
+
 def routing_teardown(**kwargs):
   for o in reversed(kwargs['obj']):
     print('Deleting', str(o))
     o.delete()
+
 
 @common.with_setup_kwargs(setup=routing_setup, teardown=routing_teardown)
 #@timed(10)
@@ -1208,6 +1250,7 @@ def routing_check(*args, **kwargs):
         _website_expected_error_response(res, bucket.name, args['code'], IGNORE_FIELD, IGNORE_FIELD)
     else:
         assert(False)
+
 
 @attr('s3website_RoutingRules')
 @attr('s3website')
