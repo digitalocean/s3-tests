@@ -49,6 +49,7 @@ boto_type = None
 # overwrite headers. Depending on the version of boto, one or the other is
 # necessary. We later determine in setup what needs to be used.
 
+
 def _update_headers(headers):
     """ update a set of headers with additions/removals
     """
@@ -66,6 +67,7 @@ def _update_headers(headers):
 # Note: We need to update the headers twice. The first time so the
 # authentication signing is done correctly. The second time to overwrite any
 # headers modified or created in the authentication step.
+
 
 class HeaderS3Connection(S3Connection):
     """ establish an authenticated connection w/customized headers
@@ -166,6 +168,7 @@ def _setup_bad_object(headers=None, remove=None):
     _add_custom_headers(headers=headers, remove=remove)
     return bucket.new_key('foo')
 
+
 def tag(*tags):
     def wrap(func):
         for tag in tags:
@@ -176,6 +179,7 @@ def tag(*tags):
 #
 # common tests
 #
+
 
 @tag('auth_common')
 @attr(resource='object')
@@ -230,6 +234,7 @@ def test_object_create_bad_authorization_empty():
     eq(e.reason, 'Forbidden')
     eq(e.error_code, 'AccessDenied')
 
+
 @tag('auth_common')
 @attr(resource='object')
 @attr(method='put')
@@ -240,6 +245,7 @@ def test_object_create_date_and_amz_date():
     date = formatdate(usegmt=True)
     key = _setup_bad_object({'Date': date, 'X-Amz-Date': date})
     key.set_contents_from_string('bar')
+
 
 @tag('auth_common')
 @attr(resource='object')
@@ -294,6 +300,7 @@ def test_object_acl_create_contentlength_none():
     _add_custom_headers(remove=('Content-Length',))
     key.set_acl('public-read')
 
+
 def _create_new_connection():
     # We're going to need to manually build a connection using bad authorization info.
     # But to save the day, lets just hijack the settings from s3.main. :)
@@ -307,6 +314,7 @@ def _create_new_connection():
         calling_format=main.calling_format,
         )
     return TargetConnection(targets.main.default.conf, conn)
+
 
 @tag('auth_common')
 @attr(resource='bucket')
@@ -362,9 +370,11 @@ def test_bucket_create_bad_authorization_none():
     eq(e.reason, 'Forbidden')
     eq(e.error_code, 'AccessDenied')
 
+
 #
 # AWS2 specific tests
 #
+
 
 @tag('auth_aws2')
 @attr(resource='object')
@@ -412,6 +422,7 @@ def test_object_create_bad_authorization_invalid_aws2():
     eq(e.reason.lower(), 'bad request') # some proxies vary the case
     eq(e.error_code, 'InvalidArgument')
 
+
 @tag('auth_aws2')
 @attr(resource='object')
 @attr(method='put')
@@ -441,6 +452,7 @@ def test_bucket_create_bad_authorization_invalid_aws2():
     eq(e.reason.lower(), 'bad request') # some proxies vary the case
     eq(e.error_code, 'InvalidArgument')
 
+
 @tag('auth_aws2')
 @attr(resource='bucket')
 @attr(method='put')
@@ -455,13 +467,16 @@ def test_bucket_create_bad_date_none_aws2():
     eq(e.reason, 'Forbidden')
     eq(e.error_code, 'AccessDenied')
 
+
 #
 # AWS4 specific tests
 #
 
+
 def check_aws4_support():
     if 'S3_USE_SIGV4' not in os.environ:
        raise SkipTest
+
 
 def check_aws2_support():
     if 'S3_USE_SIGV4' in os.environ:
@@ -856,6 +871,7 @@ def test_bucket_create_bad_ua_empty_aws4():
     eq(e.reason, 'Forbidden')
     eq(e.error_code, 'SignatureDoesNotMatch')
 
+
 @tag('auth_aws4')
 @attr(resource='bucket')
 @attr(method='put')
@@ -926,6 +942,7 @@ def test_bucket_create_bad_amz_date_empty_aws4():
     eq(e.status, 403)
     eq(e.reason, 'Forbidden')
     assert e.error_code in ('AccessDenied', 'SignatureDoesNotMatch')
+
 
 @tag('auth_aws4')
 @attr(resource='bucket')

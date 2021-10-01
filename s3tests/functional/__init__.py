@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 
 from .utils import region_sync_meta
 
+
 s3 = munch.Munch()
 config = munch.Munch()
 targets = munch.Munch()
@@ -25,12 +26,15 @@ calling_formats = dict(
     vhost=boto.s3.connection.VHostCallingFormat(),
     )
 
+
 def get_prefix():
     assert prefix is not None
     return prefix
 
+
 def is_slow_backend():
     return slow_backend
+
 
 def choose_bucket_prefix(template, max_len=30):
     """
@@ -137,6 +141,7 @@ def nuke_prefixed_buckets(prefix):
 
     print('Done with cleanup of test buckets.')
 
+
 class TargetConfig:
     def __init__(self, cfg, section):
         self.port = None
@@ -198,11 +203,11 @@ class TargetConfig:
                 'calling_format unknown: %r' % raw_calling_format
                 )
 
+
 class TargetConnection:
     def __init__(self, conf, conn):
         self.conf = conf
         self.connection = conn
-
 
 
 class RegionsInfo:
@@ -256,6 +261,7 @@ class RegionsConn:
 
 # nosetests --processes=N with N>1 is safe
 _multiprocess_can_split_ = True
+
 
 def setup():
 
@@ -407,6 +413,7 @@ def get_new_bucket(target=None, name=None, headers=None):
     bucket = connection.create_bucket(name, location=target.conf.api_name, headers=headers)
     return bucket
 
+
 def _make_request(method, bucket, key, body=None, authenticated=False, response_headers=None, request_headers=None, expires_in=100000, path_style=True, timeout=None):
     """
     issue a request for a specified method, on a specified <bucket,key>,
@@ -448,6 +455,7 @@ def _make_request(method, bucket, key, body=None, authenticated=False, response_
 
     return _make_raw_request(host=s3.main.host, port=s3.main.port, method=method, path=path, body=body, request_headers=request_headers, secure=s3.main.is_secure, timeout=timeout)
 
+
 def _make_bucket_request(method, bucket, body=None, authenticated=False, response_headers=None, request_headers=None, expires_in=100000, path_style=True, timeout=None):
     """
     issue a request for a specified method, on a specified <bucket>,
@@ -455,6 +463,7 @@ def _make_bucket_request(method, bucket, body=None, authenticated=False, respons
     return the response (status, reason)
     """
     return _make_request(method=method, bucket=bucket, key=None, body=body, authenticated=authenticated, response_headers=response_headers, request_headers=request_headers, expires_in=expires_in, path_style=path_style, timeout=timeout)
+
 
 def _make_raw_request(host, port, method, path, body=None, request_headers=None, secure=False, timeout=None):
     """
@@ -484,5 +493,3 @@ def _make_raw_request(host, port, method, path, body=None, request_headers=None,
 
     print(res.status, res.reason)
     return res
-
-
