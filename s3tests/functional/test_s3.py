@@ -57,6 +57,7 @@ def check_access_denied(fn, *args, **kwargs):
     eq(e.reason, 'Forbidden')
     eq(e.error_code, 'AccessDenied')
 
+
 def check_bad_bucket_name(name):
     """
     Attempt to create a bucket with a specified name, and confirm
@@ -66,6 +67,7 @@ def check_bad_bucket_name(name):
     eq(e.status, 400)
     eq(e.reason.lower(), 'bad request') # some proxies vary the case
     eq(e.error_code, 'InvalidBucketName')
+
 
 def _create_keys(bucket=None, keys=[]):
     """
@@ -103,11 +105,13 @@ def test_bucket_create_naming_bad_punctuation():
     # characters other than [a-zA-Z0-9._-]
     check_bad_bucket_name('alpha!soup')
 
+
 def check_versioning(bucket, status):
     try:
         eq(bucket.get_versioning_status()['Versioning'], status)
     except KeyError:
         eq(status, None)
+
 
 # amazon is eventual consistent, retry a bit if failed
 def check_configure_versioning_retry(bucket, status, expected_string):
@@ -128,6 +132,7 @@ def check_configure_versioning_retry(bucket, status, expected_string):
 
     eq(expected_string, read_status)
 
+
 @attr(resource='object')
 @attr(method='create')
 @attr(operation='create versioned object, read not exist null version')
@@ -147,6 +152,7 @@ def test_versioning_obj_read_not_exist_null():
 
     key = bucket.get_key(objname, version_id='null')
     eq(key, None)
+
 
 @attr(resource='object')
 @attr(method='put')
@@ -171,6 +177,7 @@ def test_append_object():
 
     key = bucket.get_key('foo')
     eq(key.size, 6) 
+
 
 @attr(resource='object')
 @attr(method='put')
@@ -229,6 +236,7 @@ def test_logging_toggle():
     bucket.disable_logging()
     # NOTE: this does not actually test whether or not logging works
 
+
 def list_bucket_storage_class(bucket):
     result = defaultdict(list)
     for k in bucket.get_all_versions():
@@ -277,6 +285,7 @@ def test_lifecycle_transition():
     eq(len(expire3_keys[sc[1]]), 2)
     eq(len(expire3_keys[sc[2]]), 2)
 
+
 # The test harness for lifecycle is configured to treat days as 10 second intervals.
 @attr(resource='bucket')
 @attr(method='put')
@@ -323,6 +332,7 @@ def test_lifecycle_transition_single_rule_multi_trans():
     eq(len(expire3_keys['STANDARD']), 4)
     eq(len(expire3_keys[sc[1]]), 0)
     eq(len(expire3_keys[sc[2]]), 2)
+
 
 def generate_lifecycle_body(rules):
     body = '<?xml version="1.0" encoding="UTF-8"?><LifecycleConfiguration>'
@@ -481,6 +491,7 @@ def transfer_part(bucket, mp_id, mp_keyname, i, part, headers=None):
     part_out = StringIO(part)
     mp.upload_part_from_file(part_out, i+1, headers=headers)
 
+
 def generate_random(size, part_size=5*1024*1024):
     """
     Generate the specified number random data.
@@ -500,6 +511,7 @@ def generate_random(size, part_size=5*1024*1024):
         yield s
         if (x == size):
             return
+
 
 def _multipart_upload(bucket, s3_key_name, size, part_size=5*1024*1024, do_list=None, headers=None, metadata=None, storage_class=None, resend_parts=[]):
     """
@@ -527,6 +539,7 @@ def _multipart_upload(bucket, s3_key_name, size, part_size=5*1024*1024, do_list=
 
     return (upload, s)
 
+
 def _populate_key(bucket, keyname, size=7*1024*1024, storage_class=None):
     if bucket is None:
         bucket = get_new_bucket()
@@ -538,8 +551,10 @@ def _populate_key(bucket, keyname, size=7*1024*1024, storage_class=None):
     key.set_contents_from_file(fp=data)
     return (key, data_str)
 
+
 def gen_rand_string(size, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
+
 
 def verify_object(bucket, k, data=None, storage_class=None):
     if storage_class:
@@ -550,6 +565,7 @@ def verify_object(bucket, k, data=None, storage_class=None):
 
         equal = data == read_data # avoid spamming log if data not equal
         eq(equal, True)
+
 
 def copy_object_storage_class(src_bucket, src_key, dest_bucket, dest_key, storage_class):
             query_args=None
@@ -567,6 +583,7 @@ def copy_object_storage_class(src_bucket, src_key, dest_bucket, dest_key, storag
                     query_args=query_args, headers=headers)
             eq(res.status, 200)
 
+
 def _populate_multipart_key(bucket, kname, size, storage_class=None):
     (upload, data) = _multipart_upload(bucket, kname, size, storage_class=storage_class)
     upload.complete_upload()
@@ -574,6 +591,7 @@ def _populate_multipart_key(bucket, kname, size, storage_class=None):
     k = bucket.get_key(kname)
 
     return (k, data)
+
 
 # Create a lifecycle config.  Either days (int) and prefix (string) is given, or rules.
 # Rules is an array of dictionaries, each dict has a 'days' and a 'prefix' key
@@ -604,11 +622,13 @@ def create_lifecycle(days = None, prefix = 'test/', rules = None):
             lifecycle.append(rule)
     return lifecycle
 
+
 def set_lifecycle(rules = None):
     bucket = get_new_bucket()
     lifecycle = create_lifecycle(rules=rules)
     bucket.configure_lifecycle(lifecycle)
     return bucket
+
 
 def configured_storage_classes():
     sc = [ 'STANDARD' ]
@@ -622,8 +642,10 @@ def configured_storage_classes():
 
     return sc
 
+
 def lc_transition(days=None, date=None, storage_class=None):
     return boto.s3.lifecycle.Transition(days=days, date=date, storage_class=storage_class)
+
 
 def lc_transitions(transitions=None):
     result = boto.s3.lifecycle.Transitions()
@@ -651,6 +673,7 @@ def test_object_storage_class():
 
         verify_object(bucket, k, data, storage_class)
 
+
 @attr(resource='object')
 @attr(method='put')
 @attr(operation='test create multipart object with storage class')
@@ -672,6 +695,7 @@ def test_object_storage_class_multipart():
         eq(key2.size, size)
         eq(key2.storage_class, storage_class)
 
+
 def _do_test_object_modify_storage_class(obj_write_func, size):
     sc = configured_storage_classes()
     if len(sc) < 2:
@@ -692,6 +716,7 @@ def _do_test_object_modify_storage_class(obj_write_func, size):
             copy_object_storage_class(bucket, k, bucket, k, new_storage_class)
             verify_object(bucket, k, data, storage_class)
 
+
 @attr(resource='object')
 @attr(method='put')
 @attr(operation='test changing objects storage class')
@@ -708,6 +733,7 @@ def test_object_modify_storage_class():
 @attr('fails_on_aws')
 def test_object_modify_storage_class_multipart():
     _do_test_object_modify_storage_class(_populate_multipart_key, size=11*1024*1024)
+
 
 def _do_test_object_storage_class_copy(obj_write_func, size):
     sc = configured_storage_classes()
@@ -730,6 +756,7 @@ def _do_test_object_storage_class_copy(obj_write_func, size):
         copy_object_storage_class(src_bucket, src_key, dest_bucket, dest_key, new_storage_class)
         verify_object(dest_bucket, dest_key, data, new_storage_class)
 
+
 @attr(resource='object')
 @attr(method='copy')
 @attr(operation='test copy object to object with different storage class')
@@ -738,6 +765,7 @@ def _do_test_object_storage_class_copy(obj_write_func, size):
 def test_object_storage_class_copy():
     _do_test_object_storage_class_copy(_populate_key, size=9*1024*1024)
 
+
 @attr(resource='object')
 @attr(method='copy')
 @attr(operation='test changing objects storage class')
@@ -745,6 +773,7 @@ def test_object_storage_class_copy():
 @attr('fails_on_aws')
 def test_object_storage_class_copy_multipart():
     _do_test_object_storage_class_copy(_populate_multipart_key, size=9*1024*1024)
+
 
 class FakeFile(object):
     """
@@ -766,6 +795,7 @@ class FakeFile(object):
     def tell(self):
         return self.offset
 
+
 class FakeWriteFile(FakeFile):
     """
     file that simulates interruptable reads of constant data
@@ -786,6 +816,7 @@ class FakeWriteFile(FakeFile):
 
         return self.char*count
 
+
 class FakeFileVerifier(object):
     """
     file that verifies expected data has been written
@@ -801,6 +832,7 @@ class FakeFileVerifier(object):
         self.size += size
         eq(data.decode(), self.char*size)
 
+
 def _verify_atomic_key_data(key, size=-1, char=None):
     """
     Make sure file is of the expected size and (simulated) content
@@ -809,6 +841,7 @@ def _verify_atomic_key_data(key, size=-1, char=None):
     key.get_contents_to_file(fp_verify)
     if size >= 0:
         eq(fp_verify.size, size)
+
 
 def _test_atomic_dual_conditional_write(file_size):
     """
@@ -844,6 +877,7 @@ def _test_atomic_dual_conditional_write(file_size):
     # verify the file
     _verify_atomic_key_data(key, file_size, 'B')
 
+
 @attr(resource='object')
 @attr(method='put')
 @attr(operation='write one or the other')
@@ -851,6 +885,7 @@ def _test_atomic_dual_conditional_write(file_size):
 @attr('fails_on_aws')
 def test_atomic_dual_conditional_write_1mb():
     _test_atomic_dual_conditional_write(1024*1024)
+
 
 @attr(resource='object')
 @attr(method='put')
@@ -871,6 +906,7 @@ def test_atomic_write_bucket_gone():
     eq(e.status, 404)
     eq(e.reason, 'Not Found')
     eq(e.error_code, 'NoSuchBucket')
+
 
 def _multipart_upload_enc(bucket, s3_key_name, size, part_size=5*1024*1024,
                           do_list=None, init_headers=None, part_headers=None,
@@ -893,7 +929,6 @@ def _multipart_upload_enc(bucket, s3_key_name, size, part_size=5*1024*1024,
         l = list(l)
 
     return (upload, s)
-
 
 
 @attr(resource='object')
@@ -923,6 +958,7 @@ def test_encryption_sse_c_multipart_invalid_chunks_1():
                       metadata={'foo': 'bar'})
     eq(e.status, 400)
 
+
 @attr(resource='object')
 @attr(method='put')
 @attr(operation='multipart upload with bad md5 for chunks')
@@ -949,6 +985,7 @@ def test_encryption_sse_c_multipart_invalid_chunks_2():
                       init_headers=init_headers, part_headers=part_headers,
                       metadata={'foo': 'bar'})
     eq(e.status, 400)
+
 
 @attr(resource='bucket')
 @attr(method='get')
@@ -990,6 +1027,7 @@ def test_bucket_policy_different_tenant():
     b = new_conn.get_bucket(bucket_name)
     b.get_all_keys()
 
+
 @attr(resource='bucket')
 @attr(method='put')
 @attr(operation='Test put condition operator end with ifExists')
@@ -1025,8 +1063,10 @@ def test_bucket_policy_set_condition_operator_end_with_IfExists():
                         request_headers={'referer': 'http://example.com'})
     eq(res.status, 403)
 
+
 def _make_arn_resource(path="*"):
     return "arn:aws:s3:::{}".format(path)
+
 
 @attr(resource='object')
 @attr(method='put')
@@ -1073,6 +1113,7 @@ def test_bucket_policy_put_obj_enc():
 
     key1.set_contents_from_string(key1_str, headers=sse_client_headers)
 
+
 @attr(resource='object')
 @attr(method='put')
 @attr(operation='put obj with RequestObjectTag')
@@ -1103,4 +1144,3 @@ def test_bucket_policy_put_obj_request_obj_tag():
 
     headers = {"x-amz-tagging" : "security=public"}
     key1.set_contents_from_string(key1_str, headers=headers)
-
